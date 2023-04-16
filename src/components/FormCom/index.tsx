@@ -1,12 +1,7 @@
 import { Input, Picker, Cell } from '@nutui/nutui-react-taro';
 import '@nutui/nutui-react-taro/dist/style.css'
-import React, { useState, useEffect } from 'react';
-import {View, Text } from "@tarojs/components"
-
-
-// FormConfig.tsx
-import React, { useState, useEffect } from 'react';
-import { Input, Select } from 'nutui-react';
+import {View} from "@tarojs/components"
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 
 interface ValidationRule {
   regex?: RegExp;
@@ -20,10 +15,11 @@ interface FormItemConfig {
   name: string;
   rules?: ValidationRule[];
   hidden?: boolean;
-  options?: { label: string; value: any }[];
+  options?: { text: string; value: any }[];
   api?: () => Promise<{ label: string; value: any }[]>;
   children?: FormConfigProps[];
   dependencies?: string[];
+  shouldHide?: (values: Record<string, any>) => boolean;
 }
 
 interface FormConfigProps {
@@ -32,10 +28,67 @@ interface FormConfigProps {
   onSubmit?: (values: Record<string, any>) => void;
 }
 
-const FormConfig: React.FC<FormConfigProps> = (props) => {
-  const { items, initialValues, onSubmit } = props;
+interface FormConfigHandles {
+  getValues: () => Record<string, any>;
+  validate: () => boolean;
+}
+
+const FInput = (props) => {
+  const {value = '', onChange, placeholder} = props;
+  const [val, UpdateValue] = useState(value)
+
+  const ChangeEvent = (v) => {
+    onChange(v)
+    UpdateValue(v)
+  }
+
+  return (
+    <Input 
+      name='text' 
+      defaultValue={val}  
+      placeholder={placeholder} 
+      onChange={ChangeEvent}
+    />
+  )
+}
+
+const FSelect = (props) => {
+  const { options = [], onChange, value, placeholder = "请选择" } = props;
+
+  const checkText = options.find(item => item.value == value)?.text || '';
+  const [selectedValue, setSelectedValue] = useState(checkText);
+  const [isVisible, setIsVisible] = useState(false)
+
+
+  const confirmPicker = (val = [], data = []) => {
+    setSelectedValue(data[0].text);
+    onChange(val[0], data[0]);
+  };
+
+  return (
+    <View>
+      <Cell title={placeholder} desc={selectedValue} onClick={() => setIsVisible(!isVisible)}/>
+      <Picker
+        isVisible={isVisible}
+        listData={options}
+        defaultValueData={selectedValue}
+        onClose={() => setIsVisible(false)}
+        onConfirm={confirmPicker}
+      />
+    </View>
+  );
+};
+
+const FormConfig = forwardRef<FormConfigHandles, FormConfigProps>((props, ref) => {
+  const { items, initialValues } = props;
   const [values, setValues] = useState<Record<string, any>>(initialValues || {});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [hiddenStatus, setHiddenStatus] = useState<Record<string, boolean>>(
+    items.reduce((acc, item) => {
+      acc[item.name] = item.hidden || false;
+      return acc;
+    }, {} as Record<string, boolean>)
+  );
 
   useEffect(() => {
     items.forEach((item) => {
@@ -47,57 +100,24 @@ const FormConfig: React.FC<FormConfigProps> = (props) => {
     });
   }, [items]);
 
-  const renderFormItem = (item: FormItemConfig) => {
-    const { type, label, name, hidden } = item;
+  
 
-    if (hidden) return null;
-
-    if (type === 'input') {
-      return (
-        <div key={name}>
-          <label>{label}</label>
-          <Input
-            value={values[name] || ''}
-            onChange={(e) => handleValueChange(name, e.target.value)}
-          />
-          {errors[name] && <p>{errors[name]}</p>}
-        </div>
-      );
-    } else if (type === 'select') {
-      return (
-        <div key={name}>
-          <label>{label}</label>
-          <Select
-            options={item.options || []}
-            value={values[name]}
-            onChange={(value) => handleValueChange(name, value)}
-          />
-          {errors[name] && <p>{errors[name]}</p>}
-        </div>
-      );
-    }
+  const updateHiddenStatus = (name: string, value: any) => {
+    items.forEach((item) => {
+      if (item.dependencies && item.dependencies.includes(name) && item.shouldHide) {
+        setHiddenStatus((prevHiddenStatus) => ({
+          ...prevHiddenStatus,
+          [item.name]: item.shouldHide({ ...values, [name]: value }),
+        }));
+      }
+    });
   };
 
   const handleValueChange = (name: string, value: any) => {
     setValues((prevValues) => ({ ...prevValues, [name]: value }));
-
-    const item = items.find((i) => i.name === name);
-    if (item) {
-      handleDependencies(item, value);
-      validateField(item, value);
-    }
+    updateHiddenStatus(name, value);
   };
 
-  const handleDependencies = (item: FormItemConfig, value: any) => {
-    if (item.dependencies) {
-      item.dependencies.forEach((depName) => {
-        const depItem = items.find((i) => i.name === depName);
-        if (depItem) {
-          depItem.hidden = !value;
-        }
-      });
-    }
-  };
 
   const validateField = (item: FormItemConfig, value: any) => {
     if (!item.rules) return true;
@@ -119,32 +139,72 @@ const FormConfig: React.FC<FormConfigProps> = (props) => {
     return !error;
   };
 
-  const handleSubmit = () => {
-    const isValid = items.every((item) => {
-      if (item.hidden) return true;
+  const validate = (): boolean => {
+    return items.every((item) => {
+      if (hiddenStatus[item.name]) return true;
       return validateField(item, values[item.name]);
     });
+  };
 
-    if (isValid && onSubmit) {
-      const submittedValues = items.reduce((acc, item) => {
-        if (!item.hidden) {
-          acc[item.name] = values[item.name];
-        }
-        return acc;
-      }, {} as Record<string, any>);
-      onSubmit(submittedValues);
+  const getValues = (): Record<string, any> => {
+    const filteredValues = items.reduce((acc, item) => {
+      if (!hiddenStatus[item.name]) {
+        acc[item.name] = values[item.name];
+      }
+      return acc;
+    }, {} as Record<string, any>);
+    return filteredValues;
+  };
+
+  const renderFormItem = (item: FormItemConfig) => {
+    const { type, label, name } = item;
+
+    if (hiddenStatus[item.name]) {
+      return null;
+    }
+
+    if (type === 'input') {
+      return (
+        <div key={name}>
+          <label>{label}</label>
+          <FInput
+            value={values[name] || ''}
+            onChange={(value) => handleValueChange(name, value)}
+          />
+          {errors[name] && <p>{errors[name]}</p>}
+        </div>
+      );
+    } else if (type === 'select') {
+      return (
+        <div key={name}>
+          <label>{label}</label>
+          <FSelect
+            options={item.options || []}
+            value={values[name]}
+            onChange={(value) => handleValueChange(name, value)}
+          />
+          {errors[name] && <p>{errors[name]}</p>}
+        </div>
+      );
     }
   };
+
+  
+  useImperativeHandle(ref, () => ({
+    getValues,
+    validate,
+  }));
+
 
   return (
     <div>
       {items.map((item) => (
         <React.Fragment key={item.name}>{renderFormItem(item)}</React.Fragment>
       ))}
-      <button onClick={handleSubmit}>提交</button>
     </div>
   );
-};
+
+});
 
 export default FormConfig;
 
