@@ -10,16 +10,18 @@ interface ValidationRule {
 }
 
 interface FormItemConfig {
-  type: 'input' | 'select';
-  label: string;
-  name: string;
+  fieldType: 'input' | 'select';
+  labelName: string;
+  fieldName: string;
+  required?: boolean;
   rules?: ValidationRule[];
-  hidden?: boolean;
-  options?: { text: string; value: any }[];
+  disable?: boolean;
+  options?: any[];
+  message?: string;
   api?: () => Promise<{ label: string; value: any }[]>;
   children?: FormConfigProps[];
-  dependencies?: string[];
-  shouldHide?: (values: Record<string, any>) => boolean;
+  showCodition?: (values: Record<string, any>) => boolean;
+  error?: string;
 }
 
 interface FormConfigProps {
@@ -30,7 +32,7 @@ interface FormConfigProps {
 
 interface FormConfigHandles {
   getValues: () => Record<string, any>;
-  validate: () => boolean;
+  validate: () => Record<string, any>;
 }
 
 const FInput = (props) => {
@@ -61,13 +63,14 @@ const FSelect = (props) => {
 
 
   const confirmPicker = (val = [], data = []) => {
-    setSelectedValue(data[0].text);
+    const {text} = data[0] ?? {}
+    setSelectedValue(text);
     onChange(val[0], data[0]);
   };
 
   return (
     <View>
-      <Cell title={placeholder} desc={selectedValue} onClick={() => setIsVisible(!isVisible)}/>
+      <Cell title={placeholder} desc={selectedValue} onClick={() => setIsVisible(!isVisible)} />
       <Picker
         isVisible={isVisible}
         listData={options}
@@ -79,20 +82,20 @@ const FSelect = (props) => {
   );
 };
 
+
 const FormConfig = forwardRef<FormConfigHandles, FormConfigProps>((props, ref) => {
-  const { items, initialValues } = props;
+  const { items, initialValues = {} } = props;
   const [values, setValues] = useState<Record<string, any>>(initialValues || {});
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [hiddenStatus, setHiddenStatus] = useState<Record<string, boolean>>(
     items.reduce((acc, item) => {
-      acc[item.name] = item.hidden || false;
+      acc[item.fieldName] = item.showCodition ? true : false;
       return acc;
     }, {} as Record<string, boolean>)
   );
 
   useEffect(() => {
     items.forEach((item) => {
-      if (item.type === 'select' && item.api) {
+      if (item.fieldType === 'select' && item.api) {
         item.api().then((options) => {
           item.options = options;
         });
@@ -100,56 +103,77 @@ const FormConfig = forwardRef<FormConfigHandles, FormConfigProps>((props, ref) =
     });
   }, [items]);
 
+  useEffect(() => {
+    items.forEach((item) => {
+      if (item.fieldType === 'select') {
+        const {fieldName} = item;
+        updateHiddenStatus(fieldName, initialValues[fieldName]);
+      }
+    });
+  }, [])
+
   
 
-  const updateHiddenStatus = (name: string, value: any) => {
+  const updateHiddenStatus = (fieldName: string, value: any) => {
     items.forEach((item) => {
-      if (item.dependencies && item.dependencies.includes(name) && item.shouldHide) {
+      if (item.showCodition) {
+        const {showCodition} = item;
         setHiddenStatus((prevHiddenStatus) => ({
           ...prevHiddenStatus,
-          [item.name]: item.shouldHide({ ...values, [name]: value }),
+          [item.fieldName]: !showCodition({ ...values, [fieldName]: value }),
         }));
       }
     });
   };
 
-  const handleValueChange = (name: string, value: any) => {
-    setValues((prevValues) => ({ ...prevValues, [name]: value }));
-    updateHiddenStatus(name, value);
+  const handleValueChange = (fieldName: string, value: any) => {
+    setValues((prevValues) => ({ ...prevValues, [fieldName]: value }));
+    updateHiddenStatus(fieldName, value);
   };
 
-
   const validateField = (item: FormItemConfig, value: any) => {
-    if (!item.rules) return true;
-
     let error = '';
+    const {required = true, message} = item;
+    if (!required) {
+      return error;
+    } else if (!item.rules) {
+      return !value ? message : '';
+    };
+
     for (const rule of item.rules) {
-      if (rule.regex && !rule.regex.test(value)) {
+      if (!value) {
+        error = rule.message || `请选择${item.labelName}`;
+        break;
+      } else if (rule.regex && !rule.regex.test(value)) {
         error = rule.message || '';
         break;
       } else if (rule.validator && !rule.validator(value)) {
         error = rule.message || '';
-       
         break;
-      }
+      } 
     }
 
-    setErrors((prevErrors) => ({ ...prevErrors, [item.name]: error }));
-
-    return !error;
+    return error;
   };
 
-  const validate = (): boolean => {
-    return items.every((item) => {
-      if (hiddenStatus[item.name]) return true;
-      return validateField(item, values[item.name]);
+
+  const validate = () => {
+    let errors = {};
+    items.forEach((item) => {
+      if (!hiddenStatus[item.fieldName]) {
+        const error = validateField(item, values[item.fieldName]);
+        if (error) {
+          errors[item.fieldName] = error;
+        }
+      }
     });
+    return errors
   };
 
   const getValues = (): Record<string, any> => {
     const filteredValues = items.reduce((acc, item) => {
-      if (!hiddenStatus[item.name]) {
-        acc[item.name] = values[item.name];
+      if (!hiddenStatus[item.fieldName]) {
+        acc[item.fieldName] = values[item.fieldName];
       }
       return acc;
     }, {} as Record<string, any>);
@@ -157,33 +181,33 @@ const FormConfig = forwardRef<FormConfigHandles, FormConfigProps>((props, ref) =
   };
 
   const renderFormItem = (item: FormItemConfig) => {
-    const { type, label, name } = item;
+    const { fieldType, labelName, fieldName, error } = item;
 
-    if (hiddenStatus[item.name]) {
+    if (hiddenStatus[fieldName]) {
       return null;
     }
 
-    if (type === 'input') {
+    if (fieldType === 'input') {
       return (
-        <div key={name}>
-          <label>{label}</label>
+        <div key={fieldName}>
+          <label>{labelName}</label>
           <FInput
-            value={values[name] || ''}
-            onChange={(value) => handleValueChange(name, value)}
+            value={values[fieldName] || ''}
+            onChange={(value) => handleValueChange(fieldName, value)}
           />
-          {errors[name] && <p>{errors[name]}</p>}
+          {error && <p>{error}</p>}
         </div>
       );
-    } else if (type === 'select') {
+    } else if (fieldType === 'select') {
       return (
-        <div key={name}>
-          <label>{label}</label>
+        <div key={fieldName}>
+          <label>{labelName}</label>
           <FSelect
             options={item.options || []}
-            value={values[name]}
-            onChange={(value) => handleValueChange(name, value)}
+            value={values[fieldName]}
+            onChange={(value) => handleValueChange(fieldName, value)}
           />
-          {errors[name] && <p>{errors[name]}</p>}
+          {error && <p>{error}</p>}
         </div>
       );
     }
@@ -199,7 +223,7 @@ const FormConfig = forwardRef<FormConfigHandles, FormConfigProps>((props, ref) =
   return (
     <div>
       {items.map((item) => (
-        <React.Fragment key={item.name}>{renderFormItem(item)}</React.Fragment>
+        <React.Fragment key={item.fieldName}>{renderFormItem(item)}</React.Fragment>
       ))}
     </div>
   );

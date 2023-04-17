@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { View, Text } from '@tarojs/components'
 import './index.scss'
-//import FormConfig, { FormConfigProps, FormConfigHandles } from "@/components/FormCom/index.tsx";
-import FormConfig, { FormConfigProps, FormConfigHandles } from '@/components/FormCom/index1.tsx';
+import FormConfig, { FormConfigProps, FormConfigHandles } from "@/components/FormCom/index.tsx";
 
 
 function sleep(time){
@@ -15,9 +14,9 @@ const App1: React.FC = () => {
   const formConfig: FormConfigProps = {
     items: [
       {
-        type: 'input',
-        label: '姓名',
-        name: 'name',
+        fieldType: 'input',
+        labelName: '姓名',
+        fieldName: 'name',
         rules: [
           {
             regex: /^[\u4e00-\u9fa5]+$/,
@@ -26,61 +25,59 @@ const App1: React.FC = () => {
         ],
       },
       {
-        type: 'select',
-        label: '性别',
-        name: 'gender',
+        fieldType: 'select',
+        labelName: '性别',
+        fieldName: 'gender',
         options: [
           { text: '男', value: 'male' },
           { text: '女', value: 'female' },
         ],
+        message: "请选择性别"
       },
       {
-        type: 'input',
-        label: '女朋友的名字',
-        name: 'girln',
+        fieldType: 'input',
+        labelName: '女朋友的名字',
+        fieldName: 'girln',
         rules: [
           {
             regex: /^[\u4e00-\u9fa5]+$/,
             message: '请输入有效的姓名',
           },
         ],
-        dependencies: ['gender'],
-        shouldHide: (values) => {
-          return values.gender !== 'female';
+        showCodition: (values) => {
+          return values.gender === 'female';
         },
       },
       {
-        type: 'select',
-        label: '国家',
-        name: 'country',
+        fieldType: 'select',
+        labelName: '国家',
+        fieldName: 'country',
         options: [
           { text: '中国', value: 'china' },
           { text: '美国', value: 'usa' },
         ],
-        dependencies: ['city'],
+        message: "请选择国家"
       },
       {
-        type: 'select',
-        label: '城市',
-        name: 'city',
-        hidden: true,
+        fieldType: 'select',
+        labelName: '城市',
+        fieldName: 'city',
+        message: "请选择城市",
         api: async () => {
           await sleep(3000)
           if (formRef.current) {
             const country = formRef.current.getValues().country;
-            if (country === 'china') {
+            if (country) {
               return [
                 { text: '北京', value: 'beijing' },
                 { text: '上海', value: 'shanghai' },
               ];
-            } else if (country === 'usa') {
-              return [
-                { text: '纽约', value: 'new_york' },
-                { text: '旧金山', value: 'san_francisco' },
-              ];
             }
           }
           return []
+        },
+        showCodition: (values) => {
+          return !!values.country;
         },
       }
     ],
@@ -88,13 +85,14 @@ const App1: React.FC = () => {
 
   const initialValues = {
     name: '张美丽',
-    gender: 'male',
+    gender: 'female'
   };
 
   const handleSubmit = () => {
-    console.log(formRef.current.getValues())
-    if (formRef.current && formRef.current.validate()) {
-      console.log('提交的数据：', formRef.current.getValues());
+    const {current} = formRef ?? {};
+    if (current) {
+      const {getValues, validate } = current;
+      console.log('提交的数据：', getValues(), validate());
     }
   };
 
@@ -107,107 +105,5 @@ const App1: React.FC = () => {
   );
 };
 
-const App: React.FC = () => {
-  const formConfigRef = useRef<FormConfigHandles>(null);
 
-  const formItems: FormConfigProps['items'] = [
-    {
-      type: 'select',
-      label: 'User Type',
-      name: 'userType',
-      options: [
-        { label: 'Admin', value: 'admin' },
-        { label: 'Member', value: 'member' },
-      ],
-    },
-    {
-      type: 'input',
-      label: 'Username',
-      name: 'username',
-      validation: {
-        required: true,
-      },
-    },
-    {
-      type: 'input',
-      label: 'Password',
-      name: 'password',
-      validation: {
-        required: true,
-        pattern: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/,
-      },
-    },
-    {
-      type: 'nested',
-      label: 'Admin Information',
-      name: 'admin',
-      shouldHide: (values) => values.userType !== 'admin',
-      children: [
-        {
-          type: 'input',
-          label: 'Admin ID',
-          name: 'id',
-          validation: {
-            required: true,
-          },
-        },
-        {
-          type: 'input',
-          label: 'Admin Email',
-          name: 'email',
-          validation: {
-            required: true,
-            pattern: /^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/,
-          },
-        },
-      ],
-    },
-    {
-      type: 'nested',
-      label: 'Member Information',
-      name: 'member',
-      shouldHide: (values) => values.userType !== 'member',
-      children: [
-        {
-          type: 'input',
-          label: 'Member ID',
-          name: 'id',
-          validation: {
-            required: true,
-          },
-        },
-        {
-          type: 'input',
-          label: 'Member Email',
-          name: 'email',
-          validation: {
-            required: true,
-            pattern: /^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/,
-          },
-        },
-      ],
-    },
-  ];
-
-  const handleSubmit = () => {
-    if (formConfigRef.current) {
-      const values = formConfigRef.current.getValues();
-      console.log('Form values:', values);
-      if (formConfigRef.current.validate()) {
-        console.log('Form values:', values);
-      } else {
-        console.log('Validation failed');
-      }
-    }
-  };
-
-  return (
-    <div>
-      <FormConfig items={formItems} ref={formConfigRef} />
-      <button onClick={handleSubmit}>提交</button>
-    </div>
-  );
-};
-
-
-export default App;
+export default App1;
