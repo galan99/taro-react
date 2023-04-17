@@ -2,3 +2,4 @@
 npx @tarojs/cli init taro-react-app
 
 
+test
