@@ -1,0 +1,114 @@
+.steps{
+  //最外层
+  margin-left: 50%;
+  transform: translateX(-50%);
+  width: 254px;
+  height: 44px;
+  overflow: hidden;
+  position: relative;
+  white-space: nowrap;
+  box-sizing: border-box;
+  line-height: 0;
+  //滚动层
+  .step-view{
+    position: absolute;
+    //width: 351px;
+    //margin: 0 12px;
+    white-space: nowrap;
+    box-sizing: border-box;
+    overflow: scroll;
+    line-height: 0;
+    .line-view{
+      position: absolute;
+      top: 0;
+      height: 20px;
+      box-sizing: border-box;
+      display: flex;
+      .line{
+        z-index: 999;
+        flex: 1;
+        flex-shrink: 0;
+        display: inline-block;
+        width: 60px;
+        height: 1px;
+        margin-top: 10px;
+        margin-left: 36px;
+        border-radius: 1px;
+        &:first-child{
+          margin-left: 49px;
+        }
+      }
+      .red{
+        background: rgba(237,40,40,1);
+      }
+      .grey{
+        background: rgba(232,232,232,1);
+      }
+      .blue{
+        background: rgba(55,104,250,1);
+      }
+    }
+    .ball-view{
+      line-height: 0;
+      box-sizing: border-box;
+      display: inline-block;
+      flex-shrink: 0;
+      margin-left: 40px;
+      &:first-of-type{
+        margin-left: 4px;
+      }
+      .ball{
+        display: block;
+        margin-top: 1px;
+        margin-left: 50%;
+        transform: translateX(-50%);
+        height: 18px;
+        width: 18px;
+        border-radius: 50%;
+        font-size: 12px;
+        line-height: 18px;
+        text-align: center;
+        font-weight: 500;
+      }
+      .text{
+        height: 20px;
+        width: 56px;
+        display: block;
+        text-align: center;
+        margin-top: 5px;
+        font-size: 14px;
+        line-height: 20px;
+        font-family: PingFang SC;
+      }
+      .red{
+        background: rgba(237,40,40,1);
+      }
+      .grey{
+        background: rgba(247,247,247,1);
+      }
+      .blue{
+        background: rgba(55,104,250,1);
+      }
+      .pale-blue{
+        background: rgba(235,240,255,1);
+      }
+      .grey-text{
+        color: rgba(140,140,140,1);
+      }
+      .blue-text{
+        color: rgba(22,93,255,1);
+        font-weight: 500;
+      }
+      .black-text{
+        color: rgba(29,33,41,1);
+      }
+      .red-text{
+        color: rgba(237,40,40,1);
+        font-weight: 500;
+      }
+      .white-text{
+        color: rgba(255,255,255,1);
+      }
+    }
+  }
+}

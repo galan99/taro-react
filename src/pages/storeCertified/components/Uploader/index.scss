@@ -1,0 +1,16 @@
+.upload-component {
+  font-family: PingFang SC;
+  width: 100%;
+  .nut-uploader {
+    display: flex;
+    width: 100%!important;
+  }
+  .nut-uploader__preview-img {
+    width: 60px;
+    height: 60px;
+  }
+  .nut-uploader__upload {
+    width: 60px;
+    height: 60px;
+  }
+}
