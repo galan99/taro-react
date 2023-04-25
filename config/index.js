@@ -3,11 +3,12 @@ const path = require('path');
 const config = {
   projectName: 'taro-react-app',
   date: '2023-4-15',
-  designWidth: 750,
+  designWidth: 375,
   deviceRatio: {
     640: 2.34 / 2,
     750: 1,
-    828: 1.81 / 2
+    828: 1.81 / 2,
+    375: 2 / 1,
   },
   sourceRoot: 'src',
   outputRoot: 'dist',

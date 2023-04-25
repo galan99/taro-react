@@ -98,7 +98,7 @@ const App1: React.FC = () => {
 
   return (
     <div>
-      <h1>表单示例</h1>
+      <View>表单示例</View>
       <FormConfig ref={formRef} {...formConfig} initialValues={initialValues} />
       <button onClick={handleSubmit}>提交</button>
     </div>

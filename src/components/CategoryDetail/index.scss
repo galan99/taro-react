@@ -1,0 +1,10 @@
+.category-dpage {
+  font-size: 20px;
+ &-mt {
+  display: flex;
+  line-height: 20px;
+  .mt-item {
+    flex: 1;
+  }
+ } 
+}

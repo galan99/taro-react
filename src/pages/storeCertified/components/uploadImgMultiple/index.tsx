@@ -2,11 +2,17 @@ import { useEffect, useState } from 'react'
 import { View, Text, Image as Img } from '@tarojs/components'
 import { Icon, Popup } from '@nutui/nutui-react-taro'
 import Taro from '@tarojs/taro'
-import { dsmUpload } from '@framework/network/dsm-api'
 import { getLessLimitSizeImage } from '@/utils/ImageUtils';
 import './index.scss'
 
 const UploadBarImg = 'https://img10.360buyimg.com/imagetools/jfs/t1/201609/25/29353/3015/63a02eb1Eac4c1a93/6fb77f2e47a051cb.png'
+
+
+const dsmUpload = () => {
+  return new Promise((resolve) => {
+    resolve(true)
+  })
+}
 
 export interface UploadBarProps {
   defaultImgUrl?: string
@@ -263,7 +269,8 @@ export const UploadBar = (props: UploadBarProps) => {
         {
           imagePreview && <div className='backgroundImg' style={{ backgroundImage: 'url(' + imagePreview + ')', width: '100%', height: '100%' }} onClick={() => {
             setImagePreview('')
-          }}></div>
+          }}
+          ></div>
         }
       </Popup>
     </View>
