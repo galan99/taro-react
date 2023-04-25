@@ -6,6 +6,10 @@ interface propsTypes {
 
 }
 
+const Item = () => {
+
+}
+
 const Index:FC<propsTypes> = (props) => {
   const {} = props
   return (
@@ -16,7 +20,11 @@ const Index:FC<propsTypes> = (props) => {
         <View className='mt-item'>一级类目</View>
       </View>
       <View className='category-dpage-mc'>
-
+        <View className='mc-ul'>
+          <View className='mc-ul-item'>商品1</View>
+          <View className='mc-ul-item'>商品1</View>
+          <View className='mc-ul-item'>商品1</View>
+        </View>
       </View>
     </View>
   )
