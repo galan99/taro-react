@@ -28,4 +28,18 @@ const Index = () => {
 }
 ```
 
-2. 
+2. 多个className
+```javascript
+import classNames from 'classnames'
+
+
+const noticebarClass = classNames({
+  'nut-noticebar-page': true,
+  withicon: closeMode,
+  close: closeMode,
+  wrapable,
+})
+
+<View className={classNames('BusinessCategoryWrap', {category1Item_active: active,})}>测试</View>
+
+```
