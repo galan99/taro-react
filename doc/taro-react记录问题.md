@@ -43,3 +43,24 @@ const noticebarClass = classNames({
 <View className={classNames('BusinessCategoryWrap', {category1Item_active: active,})}>测试</View>
 
 ```
+
+3. 连续调用setState不更新
+
+```typescript
+
+const [state, setState] = (<Record<string, any>>{})
+
+// 连续调用不更新
+setState({
+  ...state,
+  ...result,
+})
+
+// 通过箭头函数把参数传递获取最新的state
+setState(data => ({
+    ...data,
+    ...result,
+}))
+
+```
+
