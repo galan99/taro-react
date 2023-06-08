@@ -26,6 +26,7 @@ interface ApiKey {
   name: string;
 }
 // 泛型
+// Partial<T> 的作用就是将某个类型里的属性全部变为可选项 ?
 type BasePageProps<T> = Partial<T> & {
     [key in number]: any;
 }
