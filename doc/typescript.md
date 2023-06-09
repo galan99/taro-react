@@ -1,6 +1,10 @@
 ### 常用ts
 
 ```typescript
+// 声明全局方法
+const jmSDK = (window as any).jmSDK
+jmSDK.call('chooseImage', {}, function (res) {})
+
 // 枚举
 enum FlowTypes {
   Enter = 1,
