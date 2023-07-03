@@ -1,70 +1,83 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { View, Text } from '@tarojs/components'
 import { Popup, Icon } from '@nutui/nutui-react-taro'
+import Taro from '@tarojs/taro'
+import classNames from 'classnames'
 import './index.scss'
 
-
 interface SelectProps {
-  defaultValue: any;
-  title?: string;
-  onChange: (value: any) => void;
-  options: Array<{value: string | number, label: string}>;
-  placeholder?: string;
+    defaultValue: any
+    title?: string
+    onChange: (value: any) => void
+    options: Array<{ value: string | number; label: string }>
+    placeholder?: string
 }
 
-const Index: React.FC<SelectProps> = (props) => {
-    const {defaultValue, title = '请选择', placeholder = '请选择', onChange, options = []} = props;
+const isEmpty = (obj: any): boolean => ['', undefined, null].includes(obj)
+
+const SelectCom: React.FC<SelectProps> = props => {
+    const { defaultValue, title = '请选择', placeholder = '请选择', onChange, options = [] } = props
     const [isVisible, setIsVisible] = useState(false)
     const [currentVal, setCurrentVal] = useState<any>()
-    const [currentLabel, setCurrentLabel] = useState<string>()
-    useEffect(() => {
-      if (!['', undefined, null].includes(defaultValue)) {
-        setCurrentVal(defaultValue)
-        const labelItem = options.find(item => item.value === defaultValue);
-        if (labelItem?.label) {
-          setCurrentLabel(labelItem.label)
-        }
-      }
-    }, [defaultValue])
 
     const handleSave = () => {
-      if (!['', undefined, null].includes(currentVal)) {
-        setIsVisible(false)
-        const labelItem = options.find(item => item.value === currentVal);
-        if (labelItem?.label) {
-          setCurrentLabel(labelItem.label)
+        if (!isEmpty(currentVal)) {
+            setIsVisible(false)
+            onChange && onChange(currentVal)
+        } else {
+            Taro.showToast({
+                title: '请选择',
+                icon: 'none',
+                duration: 2500,
+            })
         }
-        onChange && onChange(currentVal)
-      }
     }
 
-    const chooseItem = (item) => {
+    const handelCancel = () => {
+        setIsVisible(false)
+    }
+
+    const chooseItem = item => {
         if (!item.disable) {
-          setCurrentVal(item.value)
+            setCurrentVal(item.value)
         }
     }
+
+    const initCurrent = useCallback(() => {
+        setCurrentVal(!isEmpty(defaultValue) ? defaultValue : '')
+    }, [defaultValue])
 
     const showSelect = () => {
-      setIsVisible(true)
+        setIsVisible(true)
+        initCurrent()
     }
+
+    const currentLabel = useMemo(() => {
+        const labelItem = options.find(item => item.value === defaultValue)
+        return labelItem?.label ?? ''
+    }, [defaultValue])
 
     return (
         <View className='select-component'>
-            <View
-                className='select-component-show'
-                onClick={showSelect}
-            >
+            <View className='select-component-show' onClick={showSelect}>
                 <Text className='select-component-show-text'>{currentLabel || placeholder}</Text>
                 <Icon className='select-component-show-icon' name='rect-right'></Icon>
             </View>
-            <Popup closeOnClickOverlay={false} visible={isVisible} style={{ height: options.length > 3 ? '60%' : '40%' }} position='bottom' round className='select-component-wapper'>
+            <Popup
+                closeOnClickOverlay={false}
+                visible={isVisible}
+                style={{ height: options.length > 3 ? '60%' : '40%' }}
+                position='bottom'
+                round
+                className='select-component-wapper'
+            >
                 <View className='select-component-title'>{title}</View>
                 <View className='select-component-children'>
-                    {options.map((item) => {
+                    {options.map(item => {
                         return (
                             <View
                                 onClick={() => chooseItem(item)}
-                                className={['select-component-children-item ', item.value == currentVal ? 'active' : ''].join('')}
+                                className={classNames('select-component-children-item', { active: item.value == currentVal })}
                                 key={item.value}
                             >
                                 {item.label}
@@ -74,7 +87,7 @@ const Index: React.FC<SelectProps> = (props) => {
                     })}
                 </View>
                 <View className='select-component-btns'>
-                    <View onClick={() => setIsVisible(false)} className='select-component-btn'>
+                    <View onClick={handelCancel} className='select-component-btn'>
                         取消
                     </View>
                     <View onClick={handleSave} className='select-component-btn select-component-btn-save'>
@@ -86,5 +99,4 @@ const Index: React.FC<SelectProps> = (props) => {
     )
 }
 
-
-export default Index;
+export default SelectCom
