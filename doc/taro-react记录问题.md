@@ -64,3 +64,38 @@ setState(data => ({
 
 ```
 
+4. input遇见三方输入法，频繁切换输入法类型高度变化，页面不回弹
+
+```javascript
+import { Input } from '@tarojs/components'
+import { pageScrollTo } from '@tarojs/taro'
+
+<Input
+    className={classNames(className, { 'disable-text-style': isDisableStyle })}
+    placeholder={InputPlaceholder}
+    value={value}
+    maxlength={maxlength}
+    disabled={disabled ?? !isEdit}
+    onInput={e => {
+        const length = !Number.isNaN(Number(maxlength)) ? maxlength : e.detail.value.length
+        const val = e.detail.value.substring(0, length)
+        onChange(val)
+    }}
+    onBlur={e => {
+        if (isblurTrim) {
+            onChange(e.detail.value.trim())
+        }
+        if (onBlur && typeof onBlur === 'function') {
+            onBlur(e.detail.value.trim())
+        }
+
+        // 解决页面回弹
+        if (isblurScrollTop && isJD()) {
+            pageScrollTo({
+              scrollTop: 0,
+              duration: 0,
+            })
+        }
+    }}/>
+```
+5. 
